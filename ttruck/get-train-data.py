@@ -6,6 +6,7 @@ from zipfile import ZipFile
 from shutil import copyfile
 
 # file download
+THE_LOCAL_DOWNLOAD_FOLDER = "train-data"
 DOWNLOAD_FILENAME = "train-data/images-n-labels.zip"
 EXTRACT_FOLDER = "train-data/images-n-labels"
 # the custom train data
@@ -16,7 +17,7 @@ TRAIN_SET_TXT = "../data/custom/train.txt"
 VALID_SET_TXT = "../data/custom/valid.txt"
 CLASS_NAME_FILE = "../data/custom/classes.names"
 # the custom train config
-THE_BACUP_CONFIG_FOLDER = "config"
+THE_BACKUP_CONFIG_FOLDER = "config"
 THE_CONFIG_FOLDER = "../config"
 TRAIN_CONFIG_FILE = "../config/yolov3-custom.cfg"
 
@@ -29,7 +30,7 @@ def is_daytime(h, m):
 def prepare_config_files(clear_current=False):
     # make sure all folders exists
     folders = [THE_CUSTOM_FOLDER, IMAGES_FOLDER,
-               LABELS_FOLDER, THE_CONFIG_FOLDER]
+               LABELS_FOLDER, THE_CONFIG_FOLDER, THE_LOCAL_DOWNLOAD_FOLDER]
     for folder in folders:
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -51,7 +52,7 @@ def prepare_config_files(clear_current=False):
     print("copying config files...")
     for file in config_files:
         try:
-            src = os.path.join(THE_BACUP_CONFIG_FOLDER,
+            src = os.path.join(THE_BACKUP_CONFIG_FOLDER,
                                re.search("[^/]+$", file)[0])
             copyfile(src, file)
             print(f"copied {src} to {file}.")
@@ -70,7 +71,7 @@ def run():
         input("Percent of data for validation, default 20:") or "20") / 100
 
     clear_current_train_data = input(
-        "Clear current train data & config? Y/N, default N:") or "Y"
+        "Clear current train data & config? Y/N, default Y:") or "Y"
 
     print(
         f"Review input args: {day_night_filter}, {validation_ratio}, {clear_current_train_data}.\n")
