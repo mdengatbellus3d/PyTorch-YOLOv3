@@ -1,1 +1,2 @@
-data/custom/images/train.jpg
+../data/custom/images\1212_20200910_000310.jpg
+../data/custom/images\1212_20200912_162710.jpg

@@ -63,6 +63,7 @@ def run():
     parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg", help="Path to model definition file (.cfg)")
     parser.add_argument("-d", "--data", type=str, default="config/coco.data", help="Path to data config file (.data)")
     parser.add_argument("-e", "--epochs", type=int, default=300, help="Number of epochs")
+    parser.add_argument("-se", "--starting_epoch", type=int, default=0, help="Start of epoch")
     parser.add_argument("-v", "--verbose", action='store_true', help="Makes the training more verbose")
     parser.add_argument("--n_cpu", type=int, default=8, help="Number of cpu threads to use during batch generation")
     parser.add_argument("--pretrained_weights", type=str, help="Path to checkpoint file (.weights or .pth). Starts training from checkpoint model")
@@ -97,7 +98,16 @@ def run():
     # Create model
     # ############
 
-    model = load_model(args.model, args.pretrained_weights)
+    pretrained_weights = args.pretrained_weights
+    if not pretrained_weights and args.starting_epoch:
+        if os.path.exists(f"checkpoints/yolov3_ckpt_{args.starting_epoch}.pth"):
+            pretrained_weights = f"checkpoints/yolov3_ckpt_{args.starting_epoch}.pth"
+            print(f"located the checkpoint file: checkpoints/yolov3_ckpt_{args.starting_epoch}.pth, will continue.")
+        else:
+            print(f"can not find the checkpoint file of epoch {args.starting_epoch}, will start over.")
+
+    print(f"now using pretrained_weights: {pretrained_weights}")
+    model = load_model(args.model, pretrained_weights)
 
     # Print model
     if args.verbose:
@@ -146,6 +156,9 @@ def run():
         print("Unknown optimizer. Please choose between (adam, sgd).")
 
     for epoch in range(args.epochs):
+
+        if epoch < args.starting_epoch:
+            continue
 
         print("\n---- Training Model ----")
 

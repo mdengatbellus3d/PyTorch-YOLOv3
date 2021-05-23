@@ -13,3 +13,6 @@ checkpoints
 
 .vscode/
 logs/
+
+ttruck/train-data/*
+ttruck/test-data/*
