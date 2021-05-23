@@ -16,6 +16,7 @@ LABELS_FOLDER = "../data/custom/labels"
 TRAIN_SET_TXT = "../data/custom/train.txt"
 VALID_SET_TXT = "../data/custom/valid.txt"
 CLASS_NAME_FILE = "../data/custom/classes.names"
+DATA_SET_PATH_PREFIX = "data/custom/images/"
 # the custom train config
 THE_BACKUP_CONFIG_FOLDER = "config"
 THE_CONFIG_FOLDER = "../config"
@@ -153,11 +154,9 @@ def run():
 
                 # add the file to train/valid list based on validation ratio
                 if random.random() < validation_ratio:
-                    valid_set.append(os.path.join(
-                        IMAGES_FOLDER, jpeg_filename))
+                    valid_set.append(jpeg_filename)
                 else:
-                    train_set.append(os.path.join(
-                        IMAGES_FOLDER, jpeg_filename))
+                    train_set.append(jpeg_filename)
 
     # print(train_set, valid_set)
     print(
@@ -165,11 +164,11 @@ def run():
 
     # writing train.txt & valid.txt
     f = open(TRAIN_SET_TXT, "w+")
-    f.write("\n".join(train_set))
+    f.write("\n".join([DATA_SET_PATH_PREFIX + item for item in train_set]))
     f.close()
 
     f = open(VALID_SET_TXT, "w+")
-    f.write("\n".join(valid_set))
+    f.write("\n".join([DATA_SET_PATH_PREFIX + item for item in valid_set]))
 
 
 if __name__ == "__main__":
