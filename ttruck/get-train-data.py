@@ -39,8 +39,7 @@ def prepare_config_files(clear_current=False):
     # delete current config files
     if clear_current:
         print("deleting current config files...")
-        files = [TRAIN_SET_TXT, VALID_SET_TXT,
-                 CLASS_NAME_FILE, TRAIN_CONFIG_FILE]
+        files = [CLASS_NAME_FILE, TRAIN_CONFIG_FILE]
         for file in files:
             try:
                 os.remove(file)
@@ -72,7 +71,7 @@ def run():
         input("Percent of data for validation, default 20:") or "20") / 100
 
     clear_current_train_data = input(
-        "Clear current train data & config? Y/N, default Y:") or "Y"
+        "Clear current train data & config? Y/N, default N:") or "N"
 
     print(
         f"Review input args: {day_night_filter}, {validation_ratio}, {clear_current_train_data}.\n")
