@@ -4,6 +4,7 @@ import random
 import urllib.request
 from zipfile import ZipFile
 from shutil import copyfile
+import time
 
 # file download
 THE_LOCAL_DOWNLOAD_FOLDER = "train-data"
@@ -26,6 +27,16 @@ TRAIN_CONFIG_FILE = "../config/yolov3-custom.cfg"
 def is_daytime(h, m):
     time = h*100 + m
     return time > 830 and time < 2130
+
+
+def is_valid_data(validation_ratio, jpeg_filename, prev_train_set, prev_valid_set):
+    if jpeg_filename in prev_train_set:
+        # print(jpeg_filename, "in previous training set, keep it be.")
+        return False
+    if jpeg_filename in prev_valid_set:
+        # print(jpeg_filename, "in previous validation set, keep it be.")
+        return True
+    return random.random() < validation_ratio
 
 
 def prepare_config_files(clear_current=False):
@@ -64,22 +75,51 @@ def run():
     #
     # collect some arguments
     #
+    continue_with_previous_validation_set = "Y" == (input(
+        "Continue with previous train/validation set? Y/N, default Y:") or "Y")
+
     day_night_filter = int(
         input("Filter data? NoFilter(0), DayTime(1), NightTime(2), default 0: ") or "0")
 
     validation_ratio = float(
-        input("Percent of data for validation, default 20:") or "20") / 100
+        input("Ratio(percent) of data for validation, default 10:") or "10") / 100
 
-    clear_current_train_data = input(
-        "Clear current train data & config? Y/N, default N:") or "N"
+    clear_current_train_data = "Y" == (input(
+        "Clear current train data & config? Y/N, default N:") or "N")
 
     print(
-        f"Review input args: {day_night_filter}, {validation_ratio}, {clear_current_train_data}.\n")
+        f"Review input args: {continue_with_previous_validation_set}, {day_night_filter}, {validation_ratio}, {clear_current_train_data}.\n")
+
+    # read and backup previous train/valid list
+    prev_train_set = []
+    prev_valid_set = []
+    if continue_with_previous_validation_set:
+        try:
+            f = open(TRAIN_SET_TXT, "r")
+            prev_train_set = [re.findall(r"[\d_]+\.jpg", line)[0]
+                              for line in f.readlines()]
+            f.close()
+        except Exception as e:
+            print("no previous train data set:", e)
+        try:
+            f = open(VALID_SET_TXT, "r")
+            prev_valid_set = [re.findall(r"[\d_]+\.jpg", line)[0]
+                              for line in f.readlines()]
+            f.close()
+        except Exception as e:
+            print("no previous valid data set:", e)
+        try:
+            # backup
+            suffix = str(int(time.time()))
+            copyfile(TRAIN_SET_TXT, TRAIN_SET_TXT + "." + suffix)
+            copyfile(VALID_SET_TXT, VALID_SET_TXT + "." + suffix)
+        except:
+            pass
 
     #
     # clear current train data & config
     #
-    prepare_config_files(clear_current_train_data == "Y")
+    prepare_config_files(clear_current_train_data)
 
     #
     # download data
@@ -152,14 +192,14 @@ def run():
                     continue
 
                 # add the file to train/valid list based on validation ratio
-                if random.random() < validation_ratio:
+                if is_valid_data(validation_ratio, jpeg_filename, prev_train_set, prev_valid_set):
                     valid_set.append(jpeg_filename)
                 else:
                     train_set.append(jpeg_filename)
 
     # print(train_set, valid_set)
     print(
-        f"train set size: {len(train_set)}, valid set size: {len(valid_set)}")
+        f"=========\nfinished, train set size: {len(train_set)}, valid set size: {len(valid_set)}")
 
     # writing train.txt & valid.txt
     f = open(TRAIN_SET_TXT, "w+")
