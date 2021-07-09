@@ -17,11 +17,13 @@ LABELS_FOLDER = "../data/custom/labels"
 TRAIN_SET_TXT = "../data/custom/train.txt"
 VALID_SET_TXT = "../data/custom/valid.txt"
 CLASS_NAME_FILE = "../data/custom/classes.names"
-DATA_SET_PATH_PREFIX = "data/custom/images/"
 # the custom train config
 THE_BACKUP_CONFIG_FOLDER = "config"
+THE_BACKUP_TRAIN_SET_TXT = "config/train.txt"
+THE_BACKUP_VALID_SET_TXT = "config/valid.txt"
 THE_CONFIG_FOLDER = "../config"
 TRAIN_CONFIG_FILE = "../config/yolov3-custom.cfg"
+DATA_SET_PATH_PREFIX = "data/custom/images/"
 
 
 def is_daytime(h, m):
@@ -95,14 +97,14 @@ def run():
     prev_valid_set = []
     if continue_with_previous_validation_set:
         try:
-            f = open(TRAIN_SET_TXT, "r")
+            f = open(THE_BACKUP_TRAIN_SET_TXT, "r")
             prev_train_set = [re.findall(r"[\d_]+\.jpg", line)[0]
                               for line in f.readlines()]
             f.close()
         except Exception as e:
             print("no previous train data set:", e)
         try:
-            f = open(VALID_SET_TXT, "r")
+            f = open(THE_BACKUP_VALID_SET_TXT, "r")
             prev_valid_set = [re.findall(r"[\d_]+\.jpg", line)[0]
                               for line in f.readlines()]
             f.close()
@@ -111,8 +113,8 @@ def run():
         try:
             # backup
             suffix = str(int(time.time()))
-            copyfile(TRAIN_SET_TXT, TRAIN_SET_TXT + "." + suffix)
-            copyfile(VALID_SET_TXT, VALID_SET_TXT + "." + suffix)
+            copyfile(TRAIN_SET_TXT, TRAIN_SET_TXT + "." + suffix + ".bac")
+            copyfile(VALID_SET_TXT, VALID_SET_TXT + "." + suffix + ".bac")
         except:
             pass
 
