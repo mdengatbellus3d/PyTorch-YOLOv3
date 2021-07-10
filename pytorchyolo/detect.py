@@ -24,6 +24,23 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator
 
+import time
+
+# to support the pause interface (when this script is used by other modules)
+__paused = False
+__count = 0
+__current_index = 0
+__current_image = None
+
+
+def setRunningState(paused=False):
+    global __paused
+    __paused = paused
+
+
+def getRunningState():
+    return __paused, __count, __current_index, __current_image
+
 
 def detect_directory(model_path, weights_path, img_path, classes, output_path,
                      batch_size=8, img_size=416, n_cpu=8, conf_thres=0.5, nms_thres=0.5):
@@ -128,7 +145,21 @@ def detect(model, dataloader, output_path, img_size, conf_thres, nms_thres):
     img_detections = []  # Stores detections for each image index
     imgs = []  # Stores image paths
 
+    global __paused
+    global __count
+    global __current_index
+    global __current_image
+
+    __count = len(dataloader)
+
     for (img_paths, input_imgs) in tqdm.tqdm(dataloader, desc="Detecting"):
+        # do not proceed until the __paused flag is lifted
+        while __paused:
+            print("detection paused, time: {}.".format(str(int(time.time()))))
+            time.sleep(0.5)
+
+        __current_image = input_imgs
+
         # Configure input
         input_imgs = Variable(input_imgs.type(Tensor))
 
@@ -140,6 +171,8 @@ def detect(model, dataloader, output_path, img_size, conf_thres, nms_thres):
         # Store image and detections
         img_detections.extend(detections)
         imgs.extend(img_paths)
+
+        __current_index = __current_index + 1
     return img_detections, imgs
 
 
@@ -194,14 +227,16 @@ def _draw_and_save_output_image(image_path, detections, img_size, output_path, c
     bbox_colors = random.sample(colors, n_cls_preds)
     for x1, y1, x2, y2, conf, cls_pred in detections:
 
-        print(f"\t+ Label: {classes[int(cls_pred)]} | Confidence: {conf.item():0.4f}")
+        print(
+            f"\t+ Label: {classes[int(cls_pred)]} | Confidence: {conf.item():0.4f}")
 
         box_w = x2 - x1
         box_h = y2 - y1
 
         color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
         # Create a Rectangle patch
-        bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
+        bbox = patches.Rectangle(
+            (x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
         # Add the bbox to the plot
         ax.add_patch(bbox)
         # Add label
@@ -249,21 +284,31 @@ def _create_data_loader(img_path, batch_size, img_size, n_cpu):
     return dataloader
 
 
-def run():
+def run(argv=None):
     print_environment_info()
     parser = argparse.ArgumentParser(description="Detect objects on images.")
-    parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg", help="Path to model definition file (.cfg)")
-    parser.add_argument("-w", "--weights", type=str, default="weights/yolov3.weights", help="Path to weights or checkpoint file (.weights or .pth)")
-    parser.add_argument("-i", "--images", type=str, default="data/samples", help="Path to directory with images to inference")
-    parser.add_argument("-c", "--classes", type=str, default="data/coco.names", help="Path to classes label file (.names)")
-    parser.add_argument("-o", "--output", type=str, default="output", help="Path to output directory")
-    parser.add_argument("-b", "--batch_size", type=int, default=1, help="Size of each image batch")
-    parser.add_argument("--img_size", type=int, default=416, help="Size of each image dimension for yolo")
-    parser.add_argument("--n_cpu", type=int, default=8, help="Number of cpu threads to use during batch generation")
-    parser.add_argument("--conf_thres", type=float, default=0.4, help="Object confidence threshold")
-    parser.add_argument("--nms_thres", type=float, default=0.3, help="IOU threshold for non-maximum suppression")
-    args = parser.parse_args()
-    print(f"Command line arguments: {args}")
+    parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg",
+                        help="Path to model definition file (.cfg)")
+    parser.add_argument("-w", "--weights", type=str, default="weights/yolov3.weights",
+                        help="Path to weights or checkpoint file (.weights or .pth)")
+    parser.add_argument("-i", "--images", type=str, default="data/samples",
+                        help="Path to directory with images to inference")
+    parser.add_argument("-c", "--classes", type=str, default="data/coco.names",
+                        help="Path to classes label file (.names)")
+    parser.add_argument("-o", "--output", type=str,
+                        default="output", help="Path to output directory")
+    parser.add_argument("-b", "--batch_size", type=int,
+                        default=1, help="Size of each image batch")
+    parser.add_argument("--img_size", type=int, default=416,
+                        help="Size of each image dimension for yolo")
+    parser.add_argument("--n_cpu", type=int, default=8,
+                        help="Number of cpu threads to use during batch generation")
+    parser.add_argument("--conf_thres", type=float,
+                        default=0.4, help="Object confidence threshold")
+    parser.add_argument("--nms_thres", type=float, default=0.3,
+                        help="IOU threshold for non-maximum suppression")
+    args = parser.parse_args(argv)
+    print(f"Command line arguments: {argv}, {args}")
 
     # Extract class names from file
     classes = load_classes(args.classes)  # List of class names
