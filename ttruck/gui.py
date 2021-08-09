@@ -5,6 +5,12 @@ import tkinter as tk
 
 import smtplib
 
+import os
+
+print(__file__)
+
+
+
 from pytorchyolo import detect
 
 # the detect arguments

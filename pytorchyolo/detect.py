@@ -285,6 +285,9 @@ def _create_data_loader(img_path, batch_size, img_size, n_cpu):
 
 
 def run(argv=None):
+    import sys
+    print(sys.argv)
+    print("cuda available:", torch.cuda.is_available())
     print_environment_info()
     parser = argparse.ArgumentParser(description="Detect objects on images.")
     parser.add_argument("-m", "--model", type=str, default="config/yolov3.cfg",
