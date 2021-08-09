@@ -219,12 +219,19 @@ def _draw_and_save_output_image(image_path, detections, img_size, output_path, c
     ax.imshow(img)
     # Rescale boxes to original image
     detections = rescale_boxes(detections, img_size, img.shape[:2])
-    unique_labels = detections[:, -1].cpu().unique()
+
+    # max note 20210809:
+    # to fix the following bug:
+    # Can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first
+    detections = detections.cpu()
+
+    unique_labels = detections[:, -1].unique()
     n_cls_preds = len(unique_labels)
     # Bounding-box colors
     cmap = plt.get_cmap("tab20b")
     colors = [cmap(i) for i in np.linspace(0, 1, n_cls_preds)]
     bbox_colors = random.sample(colors, n_cls_preds)
+
     for x1, y1, x2, y2, conf, cls_pred in detections:
 
         print(
@@ -304,7 +311,7 @@ def run(argv=None):
                         default=1, help="Size of each image batch")
     parser.add_argument("--img_size", type=int, default=416,
                         help="Size of each image dimension for yolo")
-    parser.add_argument("--n_cpu", type=int, default=8,
+    parser.add_argument("--n_cpu", type=int, default=4,
                         help="Number of cpu threads to use during batch generation")
     parser.add_argument("--conf_thres", type=float,
                         default=0.4, help="Object confidence threshold")
