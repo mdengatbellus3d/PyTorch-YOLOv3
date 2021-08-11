@@ -1,8 +1,9 @@
 # the framework modules
-import time
+# import time
 import threading
-from multiprocessing import Queue, Process
+# from multiprocessing import Queue, Process
 import tkinter as tk
+from tkinter import filedialog
 
 # the image plot related modules
 import matplotlib.pyplot as plt
@@ -14,13 +15,14 @@ from PIL import Image
 import random
 import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator
+from torch.utils import data
 
 # the yolo v3 module
 from pytorchyolo import detect2 as detect
-from pytorchyolo.models import load_model
+# from pytorchyolo.models import load_model
 from pytorchyolo.utils.utils import load_classes, rescale_boxes, non_max_suppression, to_cpu, print_environment_info
-from pytorchyolo.utils.datasets import ImageFolder
-from pytorchyolo.utils.transforms import Resize, DEFAULT_TRANSFORMS
+# from pytorchyolo.utils.datasets import ImageFolder
+# from pytorchyolo.utils.transforms import Resize, DEFAULT_TRANSFORMS
 
 # the detection arguments
 IMAGE_FOLDER_PATH = 'C:\\max\\truck\\testimages\\'
@@ -31,10 +33,10 @@ IMAGE_SIZE = 416
 
 
 # to compose the detect.py command line arguments...
-def getDetectpyCommandline(image_folder=IMAGE_FOLDER_PATH, weights_path=WEIGHTS_FILE_PATH, conf_thres=DEFAULT_CONF_THRES):
+def getDetectpyCommandline(data_folder=IMAGE_FOLDER_PATH, weights_path=WEIGHTS_FILE_PATH, conf_thres=DEFAULT_CONF_THRES):
     return [
         # 'yolo-detect',
-        '--images', image_folder, '--model', 'ttruck/config/yolov3-custom.cfg', '--classes',
+        '--images', data_folder, '--model', 'ttruck/config/yolov3-custom.cfg', '--classes',
         'ttruck/config/classes.names', '--weights', weights_path, '--conf_thres', conf_thres]
 
 
@@ -75,6 +77,7 @@ class MainWindow:
         self.detectionThreadCreated = False
 
         # detection & ui interaction
+        self.data_folder = None
         self.image_count = 0
         self.truck_image_count = 0
         self.processed_image_count = 0
@@ -324,6 +327,9 @@ class MainWindow:
         self.canvas.draw()
 
     def start_detection(self):
+        if self.data_folder is None:
+            self.data_folder = filedialog.askdirectory()
+
         self.startButton.config(state='disabled')
         self.pauseButton.config(state='active')
 
@@ -343,7 +349,7 @@ class MainWindow:
         detect.terminate_detection()
 
     def detect_thread_function(self):
-        detect.run(getDetectpyCommandline())
+        detect.run(getDetectpyCommandline(data_folder=self.data_folder))
         # print('detection thread started.')
 
     def show_prev_image(self, event=None):
