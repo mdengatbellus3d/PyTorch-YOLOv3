@@ -27,25 +27,34 @@ from matplotlib.ticker import NullLocator
 import time
 
 # to support the pause interface (when this script is used by other modules)
-__paused = False
-__terminated = False
-__count = 0
-__current_index = 0
-__current_image = None
+__detectionState = {}
 
 
-def startDection(start=True):
-    global __paused
-    global __terminated
-    __paused = not start
-    __terminated = False
+def reset_detection():
+    global __detectionState
+    __detectionState["paused"] = True
+    __detectionState["terminated"] = False
+    __detectionState["image_count"] = 0
+    __detectionState["current_index"] = 0
+    __detectionState["current_image"] = None
+    __detectionState["detections"] = {}
+    __detectionState["processed_image_list"] = []
+    __detectionState["target_image_list"] = []
 
-def terminateDection():
-    global __terminated
-    __terminated = True
 
-def getRunningState():
-    return __terminated, __paused, __count, __current_index, __current_image
+def start_detection(start=True):
+    global __detectionState
+    __detectionState["paused"] = not start
+    __detectionState["terminated"] = False
+
+
+def terminate_detection():
+    global __detectionState
+    __detectionState["terminated"] = True
+
+
+def get_running_state():
+    return __detectionState
 
 
 def detect_directory(model_path, weights_path, img_path, classes, output_path,
@@ -75,6 +84,7 @@ def detect_directory(model_path, weights_path, img_path, classes, output_path,
     """
     dataloader = _create_data_loader(img_path, batch_size, img_size, n_cpu)
     model = load_model(model_path, weights_path)
+
     img_detections, imgs = detect(
         model,
         dataloader,
@@ -82,8 +92,9 @@ def detect_directory(model_path, weights_path, img_path, classes, output_path,
         img_size,
         conf_thres,
         nms_thres)
-    _draw_and_save_output_images(
-        img_detections, imgs, img_size, output_path, classes)
+
+    # _draw_and_save_output_images(
+    #     img_detections, imgs, img_size, output_path, classes)
 
 
 def detect_image(model, image, img_size=416, conf_thres=0.5, nms_thres=0.5):
@@ -151,20 +162,25 @@ def detect(model, dataloader, output_path, img_size, conf_thres, nms_thres):
     img_detections = []  # Stores detections for each image index
     imgs = []  # Stores image paths
 
-    global __paused
-    global __count
-    global __current_index
-    global __current_image
+    global __detectionState
 
-    __count = len(dataloader)
+    __detectionState["image_count"] = len(dataloader)
 
     for (img_paths, input_imgs) in tqdm.tqdm(dataloader, desc="Detecting"):
-        # do not proceed until the __paused flag is lifted
-        while __paused:
-            print("detection paused, time: {}.".format(str(int(time.time()))))
-            time.sleep(0.5)
 
-        __current_image = input_imgs
+        # do not proceed until the __detectionState["paused"] flag is lifted
+        while True:
+            # immediately quit the detection if the __detectionState["terminated"] flag is lifted
+            if __detectionState["terminated"]:
+                exit()
+
+            if not __detectionState["paused"]:
+                break
+
+            # print("detection paused, time: {}.".format(str(int(time.time()))))
+            # time.sleep(0.5)
+
+        __detectionState["current_image"] = input_imgs
 
         # Configure input
         input_imgs = Variable(input_imgs.type(Tensor))
@@ -178,7 +194,31 @@ def detect(model, dataloader, output_path, img_size, conf_thres, nms_thres):
         img_detections.extend(detections)
         imgs.extend(img_paths)
 
-        __current_index = __current_index + 1
+        __detectionState["processed_image_list"].extend(img_paths)
+
+        for i in range(len(img_paths)):
+            image_index = __detectionState["current_index"] + i
+            image_path = img_paths[i]
+            current_image_detections = detections[i]
+            detected_index = len(__detectionState["target_image_list"])
+            # add to the detection dict
+            __detectionState["detections"][image_path] = {
+                "image_index": image_index,
+                "image_path": image_path,
+                "detected_index": detected_index,
+                "detections": current_image_detections
+            }
+            # add to the detected object list
+            if(len(current_image_detections) > 0):
+                __detectionState["target_image_list"].append({
+                    "image_index": image_index,
+                    "image_path": image_path,
+                    "detected_index": detected_index
+                })
+
+        __detectionState["current_index"] = __detectionState["current_index"] + \
+            len(img_paths)
+
     return img_detections, imgs
 
 
@@ -328,6 +368,10 @@ def run(argv=None):
 
     # Extract class names from file
     classes = load_classes(args.classes)  # List of class names
+
+    # init the global state
+    reset_detection()
+    start_detection()
 
     detect_directory(
         args.model,
