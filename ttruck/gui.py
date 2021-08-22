@@ -17,23 +17,23 @@ import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator
 from torch.utils import data
 
-# the yolo v3 module
-from pytorchyolo import detect2 as detect
 # from pytorchyolo.models import load_model
 from pytorchyolo.utils.utils import load_classes, rescale_boxes, non_max_suppression, to_cpu, print_environment_info
 # from pytorchyolo.utils.datasets import ImageFolder
 # from pytorchyolo.utils.transforms import Resize, DEFAULT_TRANSFORMS
 
+# the customized detect.py
+from . import detect2 as detect
+
 # the detection arguments
-IMAGE_FOLDER_PATH = 'C:\\max\\truck\\testimages\\'
-WEIGHTS_FILE_PATH = 'C:\\max\\truck\\training\\yolo3-256-16\\yolov3_ckpt_660.pth'
+WEIGHTS_FILE_PATH = 'C:\\max\\truck\\train\\yolo3-256-16\\yolov3_ckpt_699.pth'
 CLASSES_FILE_PATH = 'ttruck\\config\\classes.names'
 DEFAULT_CONF_THRES = '0.1'
 IMAGE_SIZE = 416
 
 
 # to compose the detect.py command line arguments...
-def getDetectpyCommandline(data_folder=IMAGE_FOLDER_PATH, weights_path=WEIGHTS_FILE_PATH, conf_thres=DEFAULT_CONF_THRES):
+def getDetectpyCommandline(data_folder, weights_path=WEIGHTS_FILE_PATH, conf_thres=DEFAULT_CONF_THRES):
     return [
         # 'yolo-detect',
         '--images', data_folder, '--model', 'ttruck/config/yolov3-custom.cfg', '--classes',

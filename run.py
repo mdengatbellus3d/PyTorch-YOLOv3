@@ -18,12 +18,17 @@ def main():
 
     entry = None
 
-    if action == "train":
+    if action == "init-train":
+        from ttruck.init_train import run
+        entry = run
+        argv = ["init_train.py", *argv]
+
+    elif action == "yolo-train":
         from pytorchyolo.train import run
         entry = run
         argv = ["train.py", *argv]
 
-    elif action == "detect":
+    elif action == "yolo-detect":
         from pytorchyolo.detect import run
         entry = run
         argv = ["detect.py", *argv]

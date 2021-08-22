@@ -1,0 +1,4 @@
+classes= 6
+train=ttruck/config/train.txt
+valid=ttruck/config/valid.txt
+names=ttruck/config/classes.names

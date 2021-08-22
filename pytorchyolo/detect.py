@@ -26,27 +26,6 @@ from matplotlib.ticker import NullLocator
 
 import time
 
-# to support the pause interface (when this script is used by other modules)
-__paused = False
-__terminated = False
-__count = 0
-__current_index = 0
-__current_image = None
-
-
-def startDection(start=True):
-    global __paused
-    global __terminated
-    __paused = not start
-    __terminated = False
-
-def terminateDection():
-    global __terminated
-    __terminated = True
-
-def getRunningState():
-    return __terminated, __paused, __count, __current_index, __current_image
-
 
 def detect_directory(model_path, weights_path, img_path, classes, output_path,
                      batch_size=8, img_size=416, n_cpu=8, conf_thres=0.5, nms_thres=0.5):
@@ -151,20 +130,7 @@ def detect(model, dataloader, output_path, img_size, conf_thres, nms_thres):
     img_detections = []  # Stores detections for each image index
     imgs = []  # Stores image paths
 
-    global __paused
-    global __count
-    global __current_index
-    global __current_image
-
-    __count = len(dataloader)
-
     for (img_paths, input_imgs) in tqdm.tqdm(dataloader, desc="Detecting"):
-        # do not proceed until the __paused flag is lifted
-        while __paused:
-            print("detection paused, time: {}.".format(str(int(time.time()))))
-            time.sleep(0.5)
-
-        __current_image = input_imgs
 
         # Configure input
         input_imgs = Variable(input_imgs.type(Tensor))
@@ -178,7 +144,6 @@ def detect(model, dataloader, output_path, img_size, conf_thres, nms_thres):
         img_detections.extend(detections)
         imgs.extend(img_paths)
 
-        __current_index = __current_index + 1
     return img_detections, imgs
 
 

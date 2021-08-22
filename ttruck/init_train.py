@@ -6,24 +6,24 @@ from zipfile import ZipFile
 from shutil import copyfile
 import time
 
-# file download
-THE_LOCAL_DOWNLOAD_FOLDER = "train-data"
-DOWNLOAD_FILENAME = "train-data/images-n-labels.zip"
-EXTRACT_FOLDER = "train-data/images-n-labels"
-# the custom train data
-THE_CUSTOM_FOLDER = "../data/custom"
-IMAGES_FOLDER = "../data/custom/images"
-LABELS_FOLDER = "../data/custom/labels"
-TRAIN_SET_TXT = "../data/custom/train.txt"
-VALID_SET_TXT = "../data/custom/valid.txt"
-CLASS_NAME_FILE = "../data/custom/classes.names"
-# the custom train config
-THE_BACKUP_CONFIG_FOLDER = "config"
-THE_BACKUP_TRAIN_SET_TXT = "config/train.txt"
-THE_BACKUP_VALID_SET_TXT = "config/valid.txt"
-THE_CONFIG_FOLDER = "../config"
-TRAIN_CONFIG_FILE = "../config/yolov3-custom.cfg"
-DATA_SET_PATH_PREFIX = "data/custom/images/"
+
+# the custom training related folders
+THE_CUSTOM_FOLDER = "data/custom"
+IMAGES_FOLDER = "data/custom/images"
+LABELS_FOLDER = "data/custom/labels"
+# TRAIN_SET_TXT = "data/custom/train.txt"
+# VALID_SET_TXT = "data/custom/valid.txt"
+# CLASS_NAME_FILE = "data/custom/classes.names"
+
+# the ttruck project: file download
+THE_LOCAL_DOWNLOAD_FOLDER = "ttruck/train-data"
+DOWNLOAD_FILENAME = "ttruck/train-data/images-n-labels.zip"
+EXTRACT_FOLDER = "ttruck/train-data/images-n-labels"
+# the ttruck project: the custom train config
+THE_TTRUCK_CONFIG_FOLDER = "ttruck/config"
+THE_TTRUCK_TRAIN_SET_TXT = "ttruck/config/train.txt"
+THE_TTRUCK_VALID_SET_TXT = "ttruck/config/valid.txt"
+IMAGES_BASEFOLDER_USED_BY_DATALOADER = IMAGES_FOLDER
 
 
 def is_daytime(h, m):
@@ -41,36 +41,44 @@ def is_valid_data(validation_ratio, jpeg_filename, prev_train_set, prev_valid_se
     return random.random() < validation_ratio
 
 
-def prepare_config_files(clear_current=False):
+def prepare_config_files():
     # make sure all folders exists
     folders = [THE_CUSTOM_FOLDER, IMAGES_FOLDER,
-               LABELS_FOLDER, THE_CONFIG_FOLDER, THE_LOCAL_DOWNLOAD_FOLDER]
+               LABELS_FOLDER, THE_LOCAL_DOWNLOAD_FOLDER]
     for folder in folders:
         if not os.path.exists(folder):
             os.mkdir(folder)
 
+    #
+    # decided to use the <prj>/ttruck/config folder instead of the <prj>/config folder,
+    # so we no longer need to copy the following files.
+    #
+
+    # THE_CONFIG_FOLDER = "../config"
+    # TRAIN_CONFIG_FILE = "../config/yolov3-custom.cfg"
+
     # delete current config files
-    if clear_current:
-        print("deleting current config files...")
-        files = [CLASS_NAME_FILE, TRAIN_CONFIG_FILE]
-        for file in files:
-            try:
-                os.remove(file)
-                print(f"deleted {file}.")
-            except:
-                pass
+    # if clear_current:
+    #     print("deleting current config files...")
+    #     files = [CLASS_NAME_FILE, TRAIN_CONFIG_FILE]
+    #     for file in files:
+    #         try:
+    #             os.remove(file)
+    #             print(f"*deleted {file}.")
+    #         except:
+    #             pass
 
     # copy config files
-    config_files = [CLASS_NAME_FILE, TRAIN_CONFIG_FILE]
-    print("copying config files...")
-    for file in config_files:
-        try:
-            src = os.path.join(THE_BACKUP_CONFIG_FOLDER,
-                               re.search("[^/]+$", file)[0])
-            copyfile(src, file)
-            print(f"copied {src} to {file}.")
-        except:
-            pass
+    # config_files = [CLASS_NAME_FILE, TRAIN_CONFIG_FILE]
+    # print("copying config files...")
+    # for file in config_files:
+    #     try:
+    #         src = os.path.join(THE_TTRUCK_CONFIG_FOLDER,
+    #                            re.search("[^/]+$", file)[0])
+    #         copyfile(src, file)
+    #         print(f"*copied {src} to {file}.")
+    #     except:
+    #         pass
 
 
 def run():
@@ -86,52 +94,59 @@ def run():
     validation_ratio = float(
         input("Ratio(percent) of data for validation, default 10:") or "10") / 100
 
-    clear_current_train_data = "Y" == (input(
-        "Clear current train data & config? Y/N, default N:") or "N")
+    # clear_current_train_data = "Y" == (input(
+    #     "Clear current train data & config? Y/N, default N:") or "N")
 
     print(
-        f"Review input args: {continue_with_previous_validation_set}, {day_night_filter}, {validation_ratio}, {clear_current_train_data}.\n")
+        f"Review input args: {continue_with_previous_validation_set}, {day_night_filter}, {validation_ratio}.\n")
 
-    # read and backup previous train/valid list
+    print("=========")
+
     prev_train_set = []
     prev_valid_set = []
+
+    # read the previous train/valid list
     if continue_with_previous_validation_set:
         try:
-            f = open(THE_BACKUP_TRAIN_SET_TXT, "r")
+            f = open(THE_TTRUCK_TRAIN_SET_TXT, "r")
             prev_train_set = [re.findall(r"[\d_]+\.jpg", line)[0]
                               for line in f.readlines()]
             f.close()
         except Exception as e:
-            print("no previous train data set:", e)
+            print("*no previous train data set:", e)
         try:
-            f = open(THE_BACKUP_VALID_SET_TXT, "r")
+            f = open(THE_TTRUCK_VALID_SET_TXT, "r")
             prev_valid_set = [re.findall(r"[\d_]+\.jpg", line)[0]
                               for line in f.readlines()]
             f.close()
         except Exception as e:
-            print("no previous valid data set:", e)
-        try:
-            # backup
-            suffix = str(int(time.time()))
-            copyfile(TRAIN_SET_TXT, TRAIN_SET_TXT + "." + suffix + ".bac")
-            copyfile(VALID_SET_TXT, VALID_SET_TXT + "." + suffix + ".bac")
-        except:
-            pass
+            print("*no previous valid data set:", e)
+
+    # backup the previous train/valid list
+    try:
+        # backup
+        suffix = str(int(time.time()))
+        copyfile(THE_TTRUCK_TRAIN_SET_TXT,
+                 THE_TTRUCK_TRAIN_SET_TXT + "." + suffix + ".bac")
+        copyfile(THE_TTRUCK_VALID_SET_TXT,
+                 THE_TTRUCK_VALID_SET_TXT + "." + suffix + ".bac")
+    except:
+        pass
 
     #
     # clear current train data & config
     #
-    prepare_config_files(clear_current_train_data)
+    prepare_config_files()
 
     #
     # download data
     #
     if os.path.exists(DOWNLOAD_FILENAME):
         print(
-            f"train data file {DOWNLOAD_FILENAME} exists, skipped the download.")
+            f"*train data file {DOWNLOAD_FILENAME} exists, skipped the download.")
     else:
         dataUrl = input("data zip url: ")
-        print("downloading train data...")
+        print("*downloading train data...")
         urllib.request.urlretrieve(dataUrl, DOWNLOAD_FILENAME)
 
     #
@@ -139,9 +154,9 @@ def run():
     #
     if os.path.exists(EXTRACT_FOLDER):
         print(
-            f"train data folder {EXTRACT_FOLDER} exists, skipped the extraction.")
+            f"*train data folder {EXTRACT_FOLDER} exists, skipped the extraction.")
     else:
-        print("extacting...")
+        print("*extacting...")
         with ZipFile(DOWNLOAD_FILENAME, 'r') as zipObj:
             # Extract all the contents of zip file in current directory
             zipObj.extractall(EXTRACT_FOLDER)
@@ -149,7 +164,7 @@ def run():
     #
     # moving data files & creating train/validate list
     #
-    print("moving data files & creating train.txt and valid.txt...")
+    print("*moving data files & creating train.txt and valid.txt...")
 
     train_set = []
     valid_set = []
@@ -201,15 +216,24 @@ def run():
 
     # print(train_set, valid_set)
     print(
-        f"=========\nfinished, train set size: {len(train_set)}, valid set size: {len(valid_set)}")
+        f"\n\n=========\nfinished, train set size: {len(train_set)}, valid set size: {len(valid_set)}")
 
     # writing train.txt & valid.txt
-    f = open(TRAIN_SET_TXT, "w+")
-    f.write("\n".join([DATA_SET_PATH_PREFIX + item for item in train_set]))
+    f = open(THE_TTRUCK_TRAIN_SET_TXT, "w+")
+    f.write("\n".join(
+        [IMAGES_BASEFOLDER_USED_BY_DATALOADER + "/" + item for item in train_set]))
     f.close()
 
-    f = open(VALID_SET_TXT, "w+")
-    f.write("\n".join([DATA_SET_PATH_PREFIX + item for item in valid_set]))
+    f = open(THE_TTRUCK_VALID_SET_TXT, "w+")
+    f.write("\n".join(
+        [IMAGES_BASEFOLDER_USED_BY_DATALOADER + "/" + item for item in valid_set]))
+
+    # print the train command
+    print(
+        "\n\n=========\nuse the following command to start training:"
+        "\n(12GB graphics card memory required for 256 batch size, or modify the yolov3-custom.cfg file)"
+        "\n\npython run.py yolo-train --model ttruck/config/yolov3-custom.cfg --data ttruck/config/custom.data --continue_from 0"
+    )
 
 
 if __name__ == "__main__":

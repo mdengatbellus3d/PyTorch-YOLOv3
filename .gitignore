@@ -16,3 +16,4 @@ logs/
 
 ttruck/train-data/*
 ttruck/test-data/*
+ttruck/config/*.bac

@@ -357,7 +357,7 @@ def run(argv=None):
                         default=1, help="Size of each image batch")
     parser.add_argument("--img_size", type=int, default=416,
                         help="Size of each image dimension for yolo")
-    parser.add_argument("--n_cpu", type=int, default=4,
+    parser.add_argument("--n_cpu", type=int, default=2,
                         help="Number of cpu threads to use during batch generation")
     parser.add_argument("--conf_thres", type=float,
                         default=0.4, help="Object confidence threshold")
